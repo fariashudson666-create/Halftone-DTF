@@ -125,43 +125,83 @@ export const HalftoneCanvas: React.FC<HalftoneCanvasProps> = ({
     renderHalftoneCanvas(canvas, imageElement, settings);
   }, [imageElement, isLoading, settings]);
 
-  // Função para baixar a imagem pronta com upscaling de até 8x
-  const handleDownloadReadyImage = async () => {
+  const downloadBlobAsFile = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  };
+
+  // Função para baixar a imagem pronta com 100% de fidelidade ao preview da tela
+  const handleDownloadReadyImage = async (forceExactPreview: boolean = false) => {
     if (!imageElement || isExporting) return;
 
     setIsExporting(true);
     try {
-      const dataUrl = await exportHalftoneImage(imageElement, settings);
+      const safeTitle = (imageTitle || 'arte').toLowerCase().replace(/[^a-z0-9_-]/gi, '_');
+
+      // Se for 1x ou solicitado exatamente a cópia do que está na tela:
+      if ((settings.upscaleFactor === 1 || forceExactPreview) && canvasRef.current) {
+        canvasRef.current.toBlob((blob) => {
+          if (blob) {
+            downloadBlobAsFile(blob, `${safeTitle}_halftone_fiel.png`);
+            setDownloadSuccess(true);
+            setTimeout(() => setDownloadSuccess(false), 3000);
+            setIsExporting(false);
+          } else if (canvasRef.current) {
+            const fallbackUrl = canvasRef.current.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = `${safeTitle}_halftone_fiel.png`;
+            link.href = fallbackUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setDownloadSuccess(true);
+            setTimeout(() => setDownloadSuccess(false), 3000);
+            setIsExporting(false);
+          }
+        }, 'image/png');
+        return;
+      }
+
+      // Se for fator ampliado (> 1x), escala proporcionalmente mantendo a mesma densidade e proporção do preview
+      const prevW = canvasRef.current ? canvasRef.current.width : undefined;
+      const prevH = canvasRef.current ? canvasRef.current.height : undefined;
+      const blobUrl = await exportHalftoneImage(imageElement, settings, prevW, prevH);
       
       const link = document.createElement('a');
-      const safeTitle = (imageTitle || 'arte').toLowerCase().replace(/[^a-z0-9_-]/gi, '_');
       const upscaleSuffix = settings.upscaleFactor > 1 ? `_${settings.upscaleFactor}x` : '';
       link.download = `${safeTitle}_halftone${upscaleSuffix}.png`;
-      link.href = dataUrl;
+      link.href = blobUrl;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
 
       setDownloadSuccess(true);
       setTimeout(() => setDownloadSuccess(false), 3000);
     } catch (err) {
       console.error('Erro ao exportar:', err);
       if (canvasRef.current) {
-        const fallbackUrl = canvasRef.current.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.download = 'halftone_resultado.png';
-        link.href = fallbackUrl;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        canvasRef.current.toBlob((blob) => {
+          if (blob) {
+            downloadBlobAsFile(blob, 'halftone_resultado.png');
+          }
+        }, 'image/png');
       }
     } finally {
       setIsExporting(false);
     }
   };
 
-  const outputWidth = imgDimensions.width * settings.upscaleFactor;
-  const outputHeight = imgDimensions.height * settings.upscaleFactor;
+  const previewWidth = canvasRef.current?.width || imgDimensions.width;
+  const previewHeight = canvasRef.current?.height || imgDimensions.height;
+  const outputWidth = Math.round(previewWidth * (settings.upscaleFactor || 1));
+  const outputHeight = Math.round(previewHeight * (settings.upscaleFactor || 1));
 
   // Drag & drop no canvas caso esteja vazio ou queira soltar nova imagem
   const handleCanvasDrop = (e: React.DragEvent) => {
@@ -244,11 +284,25 @@ export const HalftoneCanvas: React.FC<HalftoneCanvasProps> = ({
             </button>
           )}
 
-          {/* Botão de Download com Upscaling Aplicado */}
+          {/* Opção rápida de baixar cópia exata do que está na tela (se upscale ativo) */}
+          {imageUrl && settings.upscaleFactor > 1 && (
+            <button
+              type="button"
+              onClick={() => handleDownloadReadyImage(true)}
+              disabled={isLoading || isExporting}
+              title="Baixar exatamente como está visível na tela em 100% de fidelidade"
+              className="hidden lg:flex px-2.5 py-1 text-xs font-medium rounded-lg border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 items-center gap-1.5 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Baixar Cópia da Tela (1:1)</span>
+            </button>
+          )}
+
+          {/* Botão de Download Principal */}
           {imageUrl && (
             <button
               type="button"
-              onClick={handleDownloadReadyImage}
+              onClick={() => handleDownloadReadyImage(false)}
               disabled={isLoading || isExporting}
               className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-cyan-400 hover:bg-cyan-300 text-neutral-950 flex items-center gap-1.5 shadow-sm transition-all hover:shadow-cyan-500/20 disabled:opacity-50"
             >
@@ -263,7 +317,9 @@ export const HalftoneCanvas: React.FC<HalftoneCanvasProps> = ({
                   <span>
                     {isExporting 
                       ? `Processando ${settings.upscaleFactor}x...` 
-                      : `Baixar Imagem Pronta (${settings.upscaleFactor}x)`}
+                      : settings.upscaleFactor === 1
+                      ? 'Baixar Imagem Pronta (100% Fiel)'
+                      : `Baixar Alta Resolução (${settings.upscaleFactor}x)`}
                   </span>
                 </>
               )}
@@ -397,12 +453,16 @@ export const HalftoneCanvas: React.FC<HalftoneCanvasProps> = ({
 
           <button
             type="button"
-            onClick={handleDownloadReadyImage}
+            onClick={() => handleDownloadReadyImage(false)}
             disabled={isLoading || isExporting}
             className="text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1 text-xs transition-colors shrink-0"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Baixar PNG ({settings.upscaleFactor}x)</span>
+            <span>
+              {settings.upscaleFactor === 1
+                ? 'Baixar PNG (100% Fiel à Tela)'
+                : `Baixar PNG Alta Resolução (${settings.upscaleFactor}x)`}
+            </span>
           </button>
         </div>
       )}

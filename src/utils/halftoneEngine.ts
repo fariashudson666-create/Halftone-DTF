@@ -116,6 +116,12 @@ export function renderHalftoneCanvas(
   const offCtx = offscreen.getContext('2d', { willReadFrequently: true });
   if (!offCtx) return;
 
+  // Habilita interpolação de alta qualidade para amostragem dos pixels
+  offCtx.imageSmoothingEnabled = true;
+  offCtx.imageSmoothingQuality = 'high';
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
   try {
     offCtx.drawImage(image, 0, 0, width, height);
     const imgData = offCtx.getImageData(0, 0, width, height);
@@ -222,7 +228,7 @@ export function renderHalftoneCanvas(
           lum = Math.pow(lum, contrastPow);
 
           let density = settings.invert ? lum : 1 - lum;
-          density = Math.max(0.15, Math.min(1, density * alpha));
+          density = Math.max(0, Math.min(1, density * alpha));
 
           const maxRadius = (cellSize / 2) * 1.4;
           const dotRadius = maxRadius * density;
@@ -297,50 +303,75 @@ export function renderHalftoneCanvas(
 }
 
 /**
- * Gera a imagem final com suporte a super-resolução / upscaling de até 8x
+ * Gera a imagem final em alta fidelidade e resolução
+ * Mantém 100% da proporção, densidade e aparência aprovada pelo usuário no preview
  */
 export function exportHalftoneImage(
   image: HTMLImageElement,
-  settings: HalftoneSettings
+  settings: HalftoneSettings,
+  previewWidth?: number,
+  previewHeight?: number
 ): Promise<string> {
-  return new Promise((resolve) => {
-    const naturalW = image.naturalWidth || image.width || 1200;
-    const naturalH = image.naturalHeight || image.height || 1200;
+  return new Promise((resolve, reject) => {
+    try {
+      const naturalW = image.naturalWidth || image.width || 1200;
+      const naturalH = image.naturalHeight || image.height || 1200;
 
-    // Fator de upscaling (1x, 2x, 4x, 8x)
-    const factor = settings.upscaleFactor || 1;
+      // Dimensões de referência do preview que o usuário estava vendo na tela
+      const baseW = previewWidth && previewWidth > 0 ? previewWidth : Math.min(1200, naturalW);
+      const baseH = previewHeight && previewHeight > 0 ? previewHeight : Math.round((baseW * naturalH) / naturalW);
 
-    // Calcula dimensões escaladas respeitando o limite seguro de canvas (8192px max)
-    const maxDim = 8192;
-    let targetW = naturalW * factor;
-    let targetH = naturalH * factor;
+      const factor = settings.upscaleFactor || 1;
 
-    if (targetW > maxDim || targetH > maxDim) {
-      if (targetW > targetH) {
-        targetH = Math.round((targetH * maxDim) / targetW);
-        targetW = maxDim;
-      } else {
-        targetW = Math.round((targetW * maxDim) / targetH);
-        targetH = maxDim;
+      // Calcula as dimensões alvo
+      let targetW = Math.round(baseW * factor);
+      let targetH = Math.round(baseH * factor);
+
+      // Limite seguro de textura canvas no navegador para evitar overflow de memória / crash
+      const maxDim = 4096;
+      if (targetW > maxDim || targetH > maxDim) {
+        if (targetW > targetH) {
+          targetH = Math.round((targetH * maxDim) / targetW);
+          targetW = maxDim;
+        } else {
+          targetW = Math.round((targetW * maxDim) / targetH);
+          targetH = maxDim;
+        }
       }
+
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = targetW;
+      exportCanvas.height = targetH;
+
+      // Escala exata a partir do preview visual da tela:
+      // Se targetW == baseW (1x), scaleRatio = 1.0 e dotSize é exatamente igual ao da tela!
+      // Se targetW > baseW (2x, 4x), o número de pontos se mantém IDENTICAL ao preview, com mais pixels por ponto!
+      const scaleRatio = targetW / baseW;
+      const scaledDotSize = Math.max(1.5, settings.dotSize * scaleRatio);
+
+      const exportSettings: HalftoneSettings = {
+        ...settings,
+        dotSize: scaledDotSize
+      };
+
+      renderHalftoneCanvas(exportCanvas, image, exportSettings);
+
+      // Exporta via Blob para evitar corrupção de string base64 / limites de memória do navegador
+      exportCanvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            resolve(url);
+          } else {
+            // Fallback
+            resolve(exportCanvas.toDataURL('image/png'));
+          }
+        },
+        'image/png'
+      );
+    } catch (err) {
+      reject(err);
     }
-
-    const exportCanvas = document.createElement('canvas');
-    exportCanvas.width = targetW;
-    exportCanvas.height = targetH;
-
-    // Ajusta o tamanho da célula do ponto proporcionalmente ao tamanho exportado vs base
-    const baseW = 800;
-    const scaleRatio = targetW / baseW;
-    const scaledDotSize = Math.max(3, Math.round(settings.dotSize * scaleRatio));
-
-    const exportSettings: HalftoneSettings = {
-      ...settings,
-      dotSize: scaledDotSize
-    };
-
-    renderHalftoneCanvas(exportCanvas, image, exportSettings);
-    resolve(exportCanvas.toDataURL('image/png'));
   });
 }
 
