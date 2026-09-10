@@ -14,13 +14,17 @@ import { Sparkles, SlidersHorizontal, Image as ImageIcon } from 'lucide-react';
 const DEFAULT_SETTINGS: HalftoneSettings = {
   dotSize: 9,
   shape: 'round',
-  colorMode: 'monochrome',
+  colorMode: 'original',
   angle: 45,
   contrast: 1.2,
   invert: false,
   transparentBg: false,
   dotColor: '#000000',
-  bgColor: '#ffffff'
+  bgColor: '#ffffff',
+  removeBgColor: false,
+  bgTargetColor: '#ffffff',
+  bgTolerance: 20,
+  upscaleFactor: 1
 };
 
 export default function App() {
@@ -124,6 +128,7 @@ export default function App() {
             imageUrl={currentUrl}
             imageTitle={imageTitle}
             settings={settings}
+            onUpdateSettings={handleUpdateSettings}
           />
         </main>
       </div>

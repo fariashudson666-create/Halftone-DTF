@@ -1,5 +1,36 @@
 import { HalftoneSettings, HalftoneDotShape } from '../types';
 
+export function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  let c = hex.replace('#', '').trim();
+  if (c.length === 3) {
+    c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+  }
+  const num = parseInt(c, 16);
+  if (isNaN(num)) {
+    return { r: 255, g: 255, b: 255 };
+  }
+  return {
+    r: (num >> 16) & 255,
+    g: (num >> 8) & 255,
+    b: num & 255
+  };
+}
+
+export function colorDistancePct(
+  r1: number,
+  g1: number,
+  b1: number,
+  r2: number,
+  g2: number,
+  b2: number
+): number {
+  const dr = r1 - r2;
+  const dg = g1 - g2;
+  const db = b1 - b2;
+  // Distância Euclidiana normalizada 0..100% (distância máxima é sqrt(3 * 255^2) ≈ 441.67)
+  return (Math.sqrt(dr * dr + dg * dg + db * db) / 441.67) * 100;
+}
+
 export function rgbToCmyk(r: number, g: number, b: number): { c: number; m: number; y: number; k: number } {
   const rn = r / 255;
   const gn = g / 255;
@@ -94,6 +125,11 @@ export function renderHalftoneCanvas(
     const angleRad = (settings.angle * Math.PI) / 180;
     const contrastPow = 1 / Math.max(0.2, settings.contrast);
 
+    // Configuração de remoção de fundo por cor
+    const targetBgRgb = hexToRgb(settings.bgTargetColor || '#ffffff');
+    const removeBg = !!settings.removeBgColor;
+    const bgTol = settings.bgTolerance ?? 20;
+
     if (settings.colorMode === 'cmyk') {
       // CMYK Multi-Angle Halftone Screening
       const channels = [
@@ -121,6 +157,12 @@ export function renderHalftoneCanvas(
             const r = data[idx];
             const g = data[idx + 1];
             const b = data[idx + 2];
+
+            // Verifica remoção de fundo por cor selecionada
+            if (removeBg) {
+              const dist = colorDistancePct(r, g, b, targetBgRgb.r, targetBgRgb.g, targetBgRgb.b);
+              if (dist <= bgTol) continue;
+            }
 
             const cmyk = rgbToCmyk(r, g, b);
             let density = 0;
@@ -152,6 +194,51 @@ export function renderHalftoneCanvas(
       }
       ctx.globalCompositeOperation = 'source-over';
 
+    } else if (settings.colorMode === 'original') {
+      // Modo de Cores Originais: cada ponto adquire a cor original da imagem naquele ponto!
+      for (let y = 0; y < height; y += cellSize) {
+        for (let x = 0; x < width; x += cellSize) {
+          const sx = Math.min(width - 1, x + Math.floor(cellSize / 2));
+          const sy = Math.min(height - 1, y + Math.floor(cellSize / 2));
+          const idx = (sy * width + sx) * 4;
+
+          const alpha = data[idx + 3] / 255;
+          if (alpha < 0.05) continue;
+
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+
+          // Verifica remoção de fundo por cor selecionada
+          if (removeBg) {
+            const dist = colorDistancePct(r, g, b, targetBgRgb.r, targetBgRgb.g, targetBgRgb.b);
+            if (dist <= bgTol) continue;
+          }
+
+          // Luminosidade para definir a densidade do ponto
+          let lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+          lum = Math.pow(lum, contrastPow);
+
+          let density = settings.invert ? lum : 1 - lum;
+          density = Math.max(0.15, Math.min(1, density * alpha));
+
+          const maxRadius = (cellSize / 2) * 1.4;
+          const dotRadius = maxRadius * density;
+
+          if (dotRadius > 0.3) {
+            ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+            drawShape(
+              ctx,
+              x + cellSize / 2,
+              y + cellSize / 2,
+              dotRadius,
+              settings.shape,
+              angleRad
+            );
+          }
+        }
+      }
+
     } else {
       // Monochrome ou Custom Duotone Halftone
       ctx.fillStyle = settings.dotColor;
@@ -169,13 +256,19 @@ export function renderHalftoneCanvas(
           const g = data[idx + 1];
           const b = data[idx + 2];
 
+          // Verifica remoção de fundo por cor selecionada
+          if (removeBg) {
+            const dist = colorDistancePct(r, g, b, targetBgRgb.r, targetBgRgb.g, targetBgRgb.b);
+            if (dist <= bgTol) continue;
+          }
+
           // Luminosidade perceptiva
           let lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
           // Aplica contraste
           lum = Math.pow(lum, contrastPow);
 
-          // Densidade do ponto (pontos escuros por padrão)
+          // Densidade do ponto
           let density = settings.invert ? lum : 1 - lum;
           density = Math.max(0, Math.min(1, density * alpha));
 
@@ -196,27 +289,29 @@ export function renderHalftoneCanvas(
       }
     }
   } catch (err) {
-    // Fallback se CORS bloquear getImageData direto
     console.warn('Halftone preview fallback', err);
     ctx.drawImage(image, 0, 0, width, height);
   }
 }
 
 /**
- * Gera a imagem final na resolução original do arquivo para download perfeito
+ * Gera a imagem final com suporte a super-resolução / upscaling de até 8x
  */
 export function exportHalftoneImage(
   image: HTMLImageElement,
   settings: HalftoneSettings
 ): Promise<string> {
   return new Promise((resolve) => {
-    // Usa as dimensões naturais da imagem original (ou até 3000px para não estourar memória)
     const naturalW = image.naturalWidth || image.width || 1200;
     const naturalH = image.naturalHeight || image.height || 1200;
 
-    const maxDim = 3200;
-    let targetW = naturalW;
-    let targetH = naturalH;
+    // Fator de upscaling (1x, 2x, 4x, 8x)
+    const factor = settings.upscaleFactor || 1;
+
+    // Calcula dimensões escaladas respeitando o limite seguro de canvas (8192px max)
+    const maxDim = 8192;
+    let targetW = naturalW * factor;
+    let targetH = naturalH * factor;
 
     if (targetW > maxDim || targetH > maxDim) {
       if (targetW > targetH) {
@@ -232,8 +327,9 @@ export function exportHalftoneImage(
     exportCanvas.width = targetW;
     exportCanvas.height = targetH;
 
-    // Ajusta o tamanho da célula proporcionalmente à escala da imagem
-    const scaleRatio = targetW / 800;
+    // Ajusta o tamanho da célula do ponto proporcionalmente ao tamanho exportado vs base
+    const baseW = 800;
+    const scaleRatio = targetW / baseW;
     const scaledDotSize = Math.max(3, Math.round(settings.dotSize * scaleRatio));
 
     const exportSettings: HalftoneSettings = {
@@ -245,3 +341,4 @@ export function exportHalftoneImage(
     resolve(exportCanvas.toDataURL('image/png'));
   });
 }
+
