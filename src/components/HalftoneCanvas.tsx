@@ -10,7 +10,8 @@ import {
   Pipette,
   Scissors,
   Upload,
-  ImageIcon
+  ImageIcon,
+  Layers
 } from 'lucide-react';
 
 interface HalftoneCanvasProps {
@@ -19,6 +20,7 @@ interface HalftoneCanvasProps {
   settings: HalftoneSettings;
   onUpdateSettings?: (newSettings: Partial<HalftoneSettings>) => void;
   onUploadImage?: (file: File) => void;
+  onOpenVectorStudio?: () => void;
 }
 
 export const HalftoneCanvas: React.FC<HalftoneCanvasProps> = ({
@@ -26,7 +28,8 @@ export const HalftoneCanvas: React.FC<HalftoneCanvasProps> = ({
   imageTitle,
   settings,
   onUpdateSettings,
-  onUploadImage
+  onUploadImage,
+  onOpenVectorStudio
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputCanvasRef = useRef<HTMLInputElement | null>(null);
@@ -295,6 +298,19 @@ export const HalftoneCanvas: React.FC<HalftoneCanvasProps> = ({
             >
               <Download className="w-3.5 h-3.5 text-cyan-400" />
               <span>Baixar Cópia da Tela (1:1)</span>
+            </button>
+          )}
+
+          {/* Botão de Vetorizar em SVG para DTF e Gráfica */}
+          {imageUrl && onOpenVectorStudio && (
+            <button
+              type="button"
+              onClick={onOpenVectorStudio}
+              title="Transformar a retícula em vetor SVG puro (escalável para Illustrator, Corel e DTF)"
+              className="px-3 py-1.5 text-xs font-bold rounded-lg border border-cyan-500/50 bg-gradient-to-r from-cyan-950/70 to-neutral-900 hover:border-cyan-400 hover:from-cyan-900/60 text-cyan-200 flex items-center gap-1.5 shadow-sm transition-all"
+            >
+              <Layers className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Vetorizar (SVG)</span>
             </button>
           )}
 

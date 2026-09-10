@@ -8,15 +8,16 @@ import { HalftoneSettings } from './types';
 import { ImageUploader } from './components/ImageUploader';
 import { HalftoneControls } from './components/HalftoneControls';
 import { HalftoneCanvas } from './components/HalftoneCanvas';
-import { Sparkles } from 'lucide-react';
+import { VectorStudioModal } from './components/VectorStudioModal';
+import { Sparkles, Layers } from 'lucide-react';
 
 const DEFAULT_SETTINGS: HalftoneSettings = {
-  dotSize: 9,
-  dotSpacing: 0.7, // Pontos mais próximos um do outro por padrão
+  dotSize: 4.5, // Pontos finos e nítidos
+  dotSpacing: 1.25, // Pontos um pouco separados, calibrados para impressão DTF
   shape: 'round',
   colorMode: 'original',
   angle: 45,
-  contrast: 1.2,
+  contrast: 1.15,
   invert: false,
   transparentBg: false,
   dotColor: '#000000',
@@ -24,7 +25,9 @@ const DEFAULT_SETTINGS: HalftoneSettings = {
   removeBgColor: false,
   bgTargetColor: '#ffffff',
   bgTolerance: 20,
-  upscaleFactor: 1
+  upscaleFactor: 1,
+  dtfSeparationMode: true,
+  minDotThreshold: 0.02
 };
 
 export default function App() {
@@ -32,6 +35,7 @@ export default function App() {
   const [imageTitle, setImageTitle] = useState<string>('');
   const [settings, setSettings] = useState<HalftoneSettings>(DEFAULT_SETTINGS);
   const [mobileTab, setMobileTab] = useState<'preview' | 'controls'>('preview');
+  const [isVectorStudioOpen, setIsVectorStudioOpen] = useState<boolean>(false);
 
   const handleSelectUrl = (url: string, title?: string) => {
     setCurrentUrl(url);
@@ -77,35 +81,49 @@ export default function App() {
             <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-2">
               <span>Halftone Studio</span>
               <span className="text-[10px] font-normal px-1.5 py-0.2 rounded bg-neutral-800 text-neutral-400 border border-neutral-700">
-                Efeito de Retícula
+                DTF & Vetorização
               </span>
             </h1>
             <p className="text-[10px] text-neutral-400 hidden sm:block">
-              Coloque sua imagem, ajuste o efeito halftone e baixe pronta em PNG
+              Retículas fiéis para DTF têxtil, pontos separados e exportação vetorial SVG
             </p>
           </div>
         </div>
 
-        {/* Alternador Mobile (Apenas em telas pequenas) */}
-        <div className="flex sm:hidden bg-neutral-800 p-0.5 rounded-lg border border-neutral-700">
-          <button
-            type="button"
-            onClick={() => setMobileTab('preview')}
-            className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all ${
-              mobileTab === 'preview' ? 'bg-cyan-500 text-black' : 'text-neutral-400'
-            }`}
-          >
-            Visualizar
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileTab('controls')}
-            className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all ${
-              mobileTab === 'controls' ? 'bg-cyan-500 text-black' : 'text-neutral-400'
-            }`}
-          >
-            Ajustes
-          </button>
+        <div className="flex items-center gap-2">
+          {/* Botão de Atalho para Vetorizar no Topo */}
+          {currentUrl && (
+            <button
+              type="button"
+              onClick={() => setIsVectorStudioOpen(true)}
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-950/80 to-purple-950/50 border border-cyan-500/40 text-cyan-300 hover:border-cyan-400 hover:text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
+            >
+              <Layers className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Transformar em Vetor (SVG)</span>
+            </button>
+          )}
+
+          {/* Alternador Mobile (Apenas em telas pequenas) */}
+          <div className="flex sm:hidden bg-neutral-800 p-0.5 rounded-lg border border-neutral-700">
+            <button
+              type="button"
+              onClick={() => setMobileTab('preview')}
+              className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all ${
+                mobileTab === 'preview' ? 'bg-cyan-500 text-black font-semibold' : 'text-neutral-400'
+              }`}
+            >
+              Visualizar
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileTab('controls')}
+              className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all ${
+                mobileTab === 'controls' ? 'bg-cyan-500 text-black font-semibold' : 'text-neutral-400'
+              }`}
+            >
+              Ajustes
+            </button>
+          </div>
         </div>
       </header>
 
@@ -134,6 +152,7 @@ export default function App() {
                 settings={settings}
                 onChange={handleUpdateSettings}
                 onReset={handleResetSettings}
+                onOpenVectorStudio={currentUrl ? () => setIsVectorStudioOpen(true) : undefined}
               />
             </div>
           </div>
@@ -151,9 +170,19 @@ export default function App() {
             settings={settings}
             onUpdateSettings={handleUpdateSettings}
             onUploadImage={handleUploadFile}
+            onOpenVectorStudio={currentUrl ? () => setIsVectorStudioOpen(true) : undefined}
           />
         </main>
       </div>
+
+      {/* Modal de Vetorização para SVG */}
+      <VectorStudioModal
+        isOpen={isVectorStudioOpen}
+        onClose={() => setIsVectorStudioOpen(false)}
+        imageUrl={currentUrl}
+        imageTitle={imageTitle}
+        settings={settings}
+      />
     </div>
   );
 }

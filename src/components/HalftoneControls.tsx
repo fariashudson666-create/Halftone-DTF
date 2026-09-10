@@ -12,20 +12,151 @@ import {
   Scissors,
   Zap,
   Pipette,
-  Check
+  Check,
+  Sparkles,
+  Layers,
+  Newspaper,
+  Ban,
+  ShieldCheck,
+  Printer
 } from 'lucide-react';
 
 interface HalftoneControlsProps {
   settings: HalftoneSettings;
   onChange: (newSettings: Partial<HalftoneSettings>) => void;
   onReset: () => void;
+  onOpenVectorStudio?: () => void;
 }
 
 export const HalftoneControls: React.FC<HalftoneControlsProps> = ({
   settings,
   onChange,
-  onReset
+  onReset,
+  onOpenVectorStudio
 }) => {
+  const presets = [
+    {
+      id: 'dtf_textil',
+      label: 'DTF Têxtil',
+      tag: 'Micro-pontos Separados',
+      settings: {
+        colorMode: 'original' as const,
+        shape: 'round' as const,
+        dotSize: 3.5,
+        dotSpacing: 1.35,
+        angle: 45,
+        contrast: 1.15,
+        transparentBg: true,
+        dtfSeparationMode: true
+      }
+    },
+    {
+      id: 'popart',
+      label: 'Pop Art / Gibi',
+      tag: 'Ben-Day Colorido',
+      settings: {
+        colorMode: 'original' as const,
+        shape: 'round' as const,
+        dotSize: 7,
+        dotSpacing: 1.15,
+        angle: 45,
+        contrast: 1.25,
+        bgColor: '#ffffff',
+        transparentBg: false,
+        dtfSeparationMode: true
+      }
+    },
+    {
+      id: 'newspaper',
+      label: 'Jornal Clássico',
+      tag: 'P&B 45°',
+      settings: {
+        colorMode: 'monochrome' as const,
+        shape: 'round' as const,
+        dotSize: 6,
+        dotSpacing: 1.2,
+        angle: 45,
+        contrast: 1.35,
+        bgColor: '#ffffff',
+        transparentBg: false,
+        dtfSeparationMode: true
+      }
+    },
+    {
+      id: 'cmyk_press',
+      label: 'Offset CMYK',
+      tag: 'Rosetas Reais',
+      settings: {
+        colorMode: 'cmyk' as const,
+        shape: 'round' as const,
+        dotSize: 8,
+        dotSpacing: 1.25,
+        angle: 0,
+        contrast: 1.2,
+        bgColor: '#ffffff',
+        transparentBg: false,
+        dtfSeparationMode: true
+      }
+    },
+    {
+      id: 'engraving',
+      label: 'Gravura / Moeda',
+      tag: 'Linhas Contínuas',
+      settings: {
+        colorMode: 'monochrome' as const,
+        shape: 'line' as const,
+        dotSize: 6,
+        dotSpacing: 1.25,
+        angle: 45,
+        contrast: 1.4,
+        bgColor: '#ffffff',
+        transparentBg: false,
+        dtfSeparationMode: true
+      }
+    },
+    {
+      id: 'diamond_art',
+      label: 'Diamante Retícula',
+      tag: 'Geométrica',
+      settings: {
+        colorMode: 'monochrome' as const,
+        shape: 'diamond' as const,
+        dotSize: 7,
+        dotSpacing: 1.25,
+        angle: 45,
+        contrast: 1.3,
+        bgColor: '#ffffff',
+        transparentBg: false,
+        dtfSeparationMode: true
+      }
+    }
+  ];
+
+  // Verifica se o preset atual combina exatamente
+  const activePresetId = presets.find(
+    (p) =>
+      settings.colorMode === p.settings.colorMode &&
+      settings.shape === p.settings.shape &&
+      Math.abs(settings.dotSpacing - p.settings.dotSpacing) < 0.15 &&
+      Math.abs(settings.dotSize - p.settings.dotSize) < 2
+  )?.id;
+
+  const isNoPreset = !activePresetId;
+
+  const handleSetNoPreset = () => {
+    onChange({
+      colorMode: 'original',
+      shape: 'round',
+      dotSize: 4.5,
+      dotSpacing: 1.25,
+      angle: 45,
+      contrast: 1.0,
+      transparentBg: false,
+      removeBgColor: false,
+      dtfSeparationMode: true
+    });
+  };
+
   const shapes: { id: HalftoneDotShape; label: string; icon: React.ReactNode }[] = [
     { id: 'round', label: 'Círculo', icon: <Circle className="w-3.5 h-3.5 fill-current" /> },
     { id: 'diamond', label: 'Diamante', icon: <div className="w-2.5 h-2.5 bg-current rotate-45" /> },
@@ -73,6 +204,106 @@ export const HalftoneControls: React.FC<HalftoneControlsProps> = ({
         </button>
       </div>
 
+      {/* BLOCO EM DESTAQUE: TRANSFORMAR EM VETOR (SVG) */}
+      {onOpenVectorStudio && (
+        <div className="p-3 rounded-xl bg-gradient-to-br from-cyan-950/50 via-neutral-900 to-purple-950/30 border border-cyan-500/40 space-y-2 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-cyan-400/20 flex items-center justify-center text-cyan-400">
+                <Layers className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-white block leading-tight">
+                  Transformar em Vetor (SVG)
+                </span>
+                <span className="text-[10px] text-cyan-300/80 block leading-tight">
+                  Escalável sem perda para DTF & Gráfica
+                </span>
+              </div>
+            </div>
+            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-900/60 text-cyan-300 border border-cyan-500/30">
+              Vetor Puro
+            </span>
+          </div>
+
+          <p className="text-[10px] text-neutral-300 leading-relaxed">
+            Converte cada ponto do halftone em curvas matemáticas para abrir no Illustrator, CorelDRAW e softwares RIP de DTF.
+          </p>
+
+          <button
+            type="button"
+            onClick={onOpenVectorStudio}
+            className="w-full py-2 px-3 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-neutral-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all hover:shadow-cyan-500/20 cursor-pointer"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Abrir Estúdio de Vetorização (SVG)</span>
+          </button>
+        </div>
+      )}
+
+      {/* ESTILOS DE RETÍCULA PRONTOS + BOTÃO SEM ESTILO */}
+      <div className="space-y-2 p-2.5 rounded-xl bg-neutral-900/90 border border-neutral-800">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-semibold text-neutral-200 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Estilos de Retícula Prontos</span>
+          </span>
+          <span className="text-[9px] text-neutral-400 font-mono">1-Clique</span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-0.5">
+          {/* BOTÃO SEM ESTILO (PADRÃO / PERSONALIZADO) */}
+          <button
+            type="button"
+            onClick={handleSetNoPreset}
+            className={`py-1.5 px-2 rounded-lg border text-left transition-all ${
+              isNoPreset
+                ? 'border-amber-400/80 bg-amber-950/30 text-amber-200 ring-1 ring-amber-400/30'
+                : 'border-neutral-800 bg-neutral-950 text-neutral-300 hover:border-neutral-700 hover:text-white'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold block leading-tight truncate flex items-center gap-1">
+                <Ban className="w-3 h-3 text-amber-400" />
+                <span>Sem Estilo</span>
+              </span>
+              {isNoPreset && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 ml-1" />}
+            </div>
+            <span className="text-[9px] text-neutral-400 block leading-tight truncate mt-0.5">
+              Livre / Padrão
+            </span>
+          </button>
+
+          {/* DEMAIS ESTILOS PRONTOS */}
+          {presets.map((p) => {
+            const isMatch = activePresetId === p.id;
+
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => onChange(p.settings)}
+                className={`py-1.5 px-2 rounded-lg border text-left transition-all ${
+                  isMatch
+                    ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200 ring-1 ring-cyan-400/30'
+                    : 'border-neutral-800 bg-neutral-950 text-neutral-300 hover:border-neutral-700 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold block leading-tight truncate">
+                    {p.label}
+                  </span>
+                  {isMatch && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0 ml-1" />}
+                </div>
+                <span className="text-[9px] text-neutral-400 block leading-tight truncate mt-0.5">
+                  {p.tag}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* 1. MODO DE COR: Botão para Cores Originais em destaque */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -95,25 +326,27 @@ export const HalftoneControls: React.FC<HalftoneControlsProps> = ({
               : 'bg-neutral-900 border-neutral-800 text-neutral-300 hover:border-neutral-700 hover:text-white'
           }`}
         >
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 via-rose-500 to-cyan-500 flex items-center justify-center text-white shadow-xs">
-              <Palette className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-2.5 text-left">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-rose-500 via-amber-400 to-cyan-400 flex items-center justify-center shadow-xs">
+              <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <div className="text-left">
-              <span className="text-xs font-semibold block leading-tight">Deixar Cores Originais</span>
-              <span className="text-[10px] text-neutral-400 block leading-tight">
-                Cada ponto assume a cor exata da foto
+            <div>
+              <span className="text-xs font-bold text-white block leading-tight">
+                Cores Originais da Imagem
+              </span>
+              <span className="text-[10px] text-neutral-300 block leading-tight">
+                Pontos coloridos com as cores reais da foto
               </span>
             </div>
           </div>
           {settings.colorMode === 'original' && (
-            <div className="w-4 h-4 rounded-full bg-cyan-400 text-neutral-950 flex items-center justify-center">
-              <Check className="w-3 h-3 stroke-[3]" />
+            <div className="w-5 h-5 rounded-full bg-cyan-400 flex items-center justify-center text-neutral-950">
+              <Check className="w-3.5 h-3.5 stroke-[3]" />
             </div>
           )}
         </button>
 
-        {/* Demais Modos de Cor */}
+        {/* Outros Modos de Cor */}
         <div className="grid grid-cols-3 gap-1 bg-neutral-900/80 p-1 rounded-xl border border-neutral-800">
           {colorModes
             .filter((m) => m.id !== 'original')
@@ -134,7 +367,36 @@ export const HalftoneControls: React.FC<HalftoneControlsProps> = ({
         </div>
       </div>
 
-      {/* 2. TIRAR APENAS O FUNDO DA IMAGEM (Remover Fundo por Cor) */}
+      {/* 2. CALIBRAÇÃO ESPECIAL PARA DTF TÊXTIL (ANTI-EMPLASTAMENTO) */}
+      <div className="p-3 rounded-xl bg-neutral-900/90 border border-neutral-800 space-y-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Printer className="w-3.5 h-3.5 text-cyan-400" />
+            <div>
+              <span className="text-xs font-semibold text-neutral-200 block leading-tight">
+                Separação Física para DTF
+              </span>
+              <span className="text-[10px] text-neutral-400 block leading-tight">
+                Mantém vão livre entre os pontos
+              </span>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.dtfSeparationMode !== false}
+              onChange={(e) => onChange({ dtfSeparationMode: e.target.checked })}
+              className="sr-only peer"
+            />
+            <div className="w-9 h-5 bg-neutral-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+          </label>
+        </div>
+        <p className="text-[10px] text-neutral-400 leading-relaxed">
+          Evita que os pontos colidantem e virem uma "placa de borracha". Permite que o pó termoplástico grude no tecido mantendo o toque macio na camiseta.
+        </p>
+      </div>
+
+      {/* 3. TIRAR APENAS O FUNDO DA IMAGEM (Remover Fundo por Cor) */}
       <div className="p-3 rounded-xl bg-neutral-900/90 border border-neutral-800 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
@@ -202,31 +464,31 @@ export const HalftoneControls: React.FC<HalftoneControlsProps> = ({
               </div>
             </div>
 
-            {/* Tolerância / Sensibilidade da Remoção */}
+            {/* Tolerância da Remoção */}
             <div className="space-y-1">
               <div className="flex justify-between text-xs">
-                <span className="text-neutral-300 text-[11px]">Tolerância / Alcance da Cor</span>
+                <span className="text-neutral-300">Tolerância da Cor</span>
                 <span className="font-mono text-cyan-400 font-semibold">{settings.bgTolerance}%</span>
               </div>
               <input
                 type="range"
-                min="5"
-                max="65"
+                min="1"
+                max="75"
                 step="1"
                 value={settings.bgTolerance}
                 onChange={(e) => onChange({ bgTolerance: Number(e.target.value) })}
                 className="w-full accent-cyan-400 bg-neutral-800 h-1.5 rounded-lg appearance-none cursor-pointer"
               />
               <div className="flex justify-between text-[9px] text-neutral-500 font-mono">
-                <span>Mais estrito (5%)</span>
-                <span>Mais amplo (65%)</span>
+                <span>Precisa (só a cor exata)</span>
+                <span>Ampla (tons parecidos)</span>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* 3. UPSCALING DE ATÉ 8X (SUPER RESOLUÇÃO) */}
+      {/* 4. UPSCALING DE ATÉ 8X (SUPER RESOLUÇÃO) */}
       <div className="p-3 rounded-xl bg-neutral-900/90 border border-neutral-800 space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
@@ -268,12 +530,6 @@ export const HalftoneControls: React.FC<HalftoneControlsProps> = ({
             );
           })}
         </div>
-        <p className="text-[10px] text-neutral-400 leading-relaxed">
-          {settings.upscaleFactor === 1 && 'Resolução padrão da sua imagem.'}
-          {settings.upscaleFactor === 2 && 'Duplica a resolução mantendo nitidez nítida.'}
-          {settings.upscaleFactor === 4 && 'Multiplica por 4x para impressão em grande formato.'}
-          {settings.upscaleFactor === 8 && 'Super resolução máxima de 8x para detalhes cirúrgicos e pôsteres.'}
-        </p>
       </div>
 
       {/* Formato do Ponto */}
@@ -300,69 +556,68 @@ export const HalftoneControls: React.FC<HalftoneControlsProps> = ({
 
       {/* Sliders de Ajuste Fino */}
       <div className="space-y-3 pt-1">
-        {/* Tamanho do Ponto */}
+        {/* Tamanho do Ponto (Micro-pontos menores para DTF) */}
         <div className="space-y-1">
           <div className="flex justify-between text-xs">
             <span className="text-neutral-300">Tamanho dos Pontos</span>
-            <span className="font-mono text-cyan-400 font-semibold">{settings.dotSize} px</span>
+            <span className="font-mono text-cyan-400 font-semibold">{settings.dotSize.toFixed(1)} px</span>
           </div>
           <input
             type="range"
-            min="3"
-            max="28"
-            step="1"
+            min="1.5"
+            max="22"
+            step="0.5"
             value={settings.dotSize}
             onChange={(e) => onChange({ dotSize: Number(e.target.value) })}
             className="w-full accent-cyan-400 bg-neutral-800 h-1.5 rounded-lg appearance-none cursor-pointer"
           />
           <div className="flex justify-between text-[9px] text-neutral-500 font-mono">
-            <span>Fino (detalhado)</span>
-            <span>Grosso (estilizado)</span>
+            <span className="text-cyan-400">Micro-pontos DTF (1.5 - 4 px)</span>
+            <span>Grandes (10 - 22 px)</span>
           </div>
         </div>
 
-        {/* Proximidade / Espaçamento dos Pontos */}
+        {/* Proximidade / Espaçamento dos Pontos (Separados) */}
         <div className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-neutral-200 font-medium flex items-center gap-1.5">
-              <span>Proximidade dos Pontos</span>
+              <span>Espaçamento / Separação dos Pontos</span>
             </span>
             <span className="font-mono text-[11px] text-cyan-400 font-semibold">
-              {(settings.dotSpacing ?? 0.9) <= 0.65
-                ? 'Muito Próximos'
-                : (settings.dotSpacing ?? 0.9) <= 0.85
-                ? 'Próximos'
-                : (settings.dotSpacing ?? 0.9) <= 1.05
-                ? 'Equilibrado'
-                : 'Espaçados'}
-              {' '}({Math.round((1 / (settings.dotSpacing ?? 0.9)) * 100)}%)
+              {(settings.dotSpacing ?? 1.25) <= 0.85
+                ? 'Juntos / Densos'
+                : (settings.dotSpacing ?? 1.25) <= 1.15
+                ? 'Normal'
+                : (settings.dotSpacing ?? 1.25) <= 1.45
+                ? 'Separados (Ideal DTF)'
+                : 'Bem Arejados'}
             </span>
           </div>
 
           <input
             type="range"
-            min="0.4"
-            max="1.5"
+            min="0.6"
+            max="2.2"
             step="0.05"
-            value={settings.dotSpacing ?? 0.9}
+            value={settings.dotSpacing ?? 1.25}
             onChange={(e) => onChange({ dotSpacing: Number(e.target.value) })}
             className="w-full accent-cyan-400 bg-neutral-800 h-1.5 rounded-lg appearance-none cursor-pointer"
           />
 
           <div className="flex justify-between text-[9px] text-neutral-500 font-mono">
-            <span className="text-cyan-400 font-medium">← Mais Próximos (Juntos)</span>
-            <span>Espaçados (Separados) →</span>
+            <span>← Mais Juntos</span>
+            <span className="text-cyan-400 font-medium">Mais Separados (DTF) →</span>
           </div>
 
-          {/* Atalhos Rápidos de Proximidade */}
+          {/* Atalhos Rápidos de Separação */}
           <div className="grid grid-cols-4 gap-1 pt-1">
             {[
-              { val: 0.5, label: 'Juntos', desc: 'Super colados' },
-              { val: 0.7, label: 'Próximos', desc: 'Trama densa' },
-              { val: 0.95, label: 'Normal', desc: 'Padrão' },
-              { val: 1.3, label: 'Espaçado', desc: 'Afastados' }
+              { val: 0.85, label: 'Juntos', desc: 'Denso' },
+              { val: 1.10, label: 'Normal', desc: 'Padrão' },
+              { val: 1.35, label: 'Separados', desc: 'DTF Ideal' },
+              { val: 1.65, label: 'Arejado', desc: 'Afastados' }
             ].map((p) => {
-              const active = Math.abs((settings.dotSpacing ?? 0.9) - p.val) < 0.1;
+              const active = Math.abs((settings.dotSpacing ?? 1.25) - p.val) < 0.08;
               return (
                 <button
                   key={p.val}
@@ -429,7 +684,7 @@ export const HalftoneControls: React.FC<HalftoneControlsProps> = ({
         <div className="flex items-center justify-between p-2 rounded-lg bg-neutral-900 border border-neutral-800">
           <div>
             <span className="text-xs text-neutral-200 block">Fundo Transparente</span>
-            <span className="text-[10px] text-neutral-400 block">Ideal para estampa DTF/Silk</span>
+            <span className="text-[10px] text-neutral-400 block">Padrão para impressão em filme DTF</span>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input

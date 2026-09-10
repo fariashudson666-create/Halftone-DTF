@@ -23,5 +23,9 @@ export interface HalftoneSettings {
 
   // Upscaling de até 8x para redefinição em super resolução
   upscaleFactor: UpscaleFactor;
+
+  // Calibração Especial DTF (Direct to Film) Têxtil
+  dtfSeparationMode?: boolean; // Mantém espaçamento físico entre os pontos para não grudar nem emplastar no filme DTF
+  minDotThreshold?: number; // Elimina micro-pontos menores que X para cabeçotes e pó de cola DTF
 }
 
