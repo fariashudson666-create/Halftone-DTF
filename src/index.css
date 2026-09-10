@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-headline: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-body: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font-body);
+  }
+}
+
+.font-headline {
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.font-mono-tech {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.font-body-text {
+  font-family: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Technical crosshair and canvas dot drafting patterns */
+.bg-drafting-grid {
+  background-size: 24px 24px, 120px 120px;
+  background-image: 
+    radial-gradient(circle, rgba(59, 73, 75, 0.4) 1px, transparent 1px),
+    linear-gradient(to right, rgba(59, 73, 75, 0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(59, 73, 75, 0.12) 1px, transparent 1px);
+}
+
+.bg-choke-hazard {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(254, 179, 0, 0.18),
+    rgba(254, 179, 0, 0.18) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
+.neon-cyan-glow {
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.35);
+}
+
+.neon-amber-glow {
+  box-shadow: 0 0 12px rgba(255, 179, 0, 0.35);
+}
+
+/* Discrete technical scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #121316;
+}
+::-webkit-scrollbar-thumb {
+  background: #343538;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #849495;
+}
