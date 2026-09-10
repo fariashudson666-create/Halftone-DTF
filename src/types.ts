@@ -6,6 +6,7 @@ export type UpscaleFactor = 1 | 2 | 4 | 8;
 
 export interface HalftoneSettings {
   dotSize: number; // 2 to 32 (pixel cell size)
+  dotSpacing: number; // 0.4 to 1.6 (proximidade / espaçamento entre centros dos pontos)
   shape: HalftoneDotShape;
   colorMode: HalftoneColorMode;
   angle: number; // 0 to 90 degrees
@@ -22,12 +23,5 @@ export interface HalftoneSettings {
 
   // Upscaling de até 8x para redefinição em super resolução
   upscaleFactor: UpscaleFactor;
-}
-
-export interface ImagePreset {
-  id: string;
-  title: string;
-  url: string;
-  thumbnail: string;
 }
 

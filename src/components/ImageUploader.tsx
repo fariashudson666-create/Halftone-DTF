@@ -1,13 +1,19 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Link2, Sparkles, Image as ImageIcon, Check } from 'lucide-react';
-import { SAMPLE_IMAGES } from '../data/sampleArtworks';
+import { Upload, Link2, Image as ImageIcon, Check, RefreshCw, X } from 'lucide-react';
 
 interface ImageUploaderProps {
   currentUrl: string;
+  imageTitle?: string;
   onSelectUrl: (url: string, name?: string) => void;
+  onClearImage?: () => void;
 }
 
-export const ImageUploader: React.FC<ImageUploaderProps> = ({ currentUrl, onSelectUrl }) => {
+export const ImageUploader: React.FC<ImageUploaderProps> = ({ 
+  currentUrl, 
+  imageTitle, 
+  onSelectUrl,
+  onClearImage 
+}) => {
   const [urlInput, setUrlInput] = useState<string>('');
   const [urlError, setUrlError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -58,7 +64,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ currentUrl, onSele
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3.5">
       <div className="flex items-center justify-between">
         <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
           <ImageIcon className="w-3.5 h-3.5 text-cyan-400" />
@@ -66,6 +72,52 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ currentUrl, onSele
         </label>
         <span className="text-[10px] text-neutral-400">PNG, JPG, WebP</span>
       </div>
+
+      {/* Se já houver imagem carregada, mostra cartão de status da imagem ativa */}
+      {currentUrl && (
+        <div className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-10 h-10 rounded-lg overflow-hidden border border-neutral-700 bg-neutral-950 shrink-0">
+              <img
+                src={currentUrl}
+                alt="Imagem ativa"
+                className="w-full h-full object-cover"
+                crossOrigin="anonymous"
+              />
+            </div>
+            <div className="min-w-0">
+              <span className="text-xs font-medium text-neutral-200 block truncate">
+                {imageTitle || 'Imagem Carregada'}
+              </span>
+              <span className="text-[10px] text-cyan-400 flex items-center gap-1">
+                <Check className="w-2.5 h-2.5" />
+                <span>Pronta para halftone</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              title="Trocar por outra imagem"
+              className="p-1.5 rounded-lg border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+            {onClearImage && (
+              <button
+                type="button"
+                onClick={onClearImage}
+                title="Remover imagem"
+                className="p-1.5 rounded-lg border border-neutral-700 bg-neutral-800 hover:bg-rose-950/40 text-neutral-400 hover:text-rose-400 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Upload Drag & Drop Box */}
       <div
@@ -76,9 +128,9 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ currentUrl, onSele
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`border border-dashed rounded-xl p-3 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5 ${
+        className={`border border-dashed rounded-xl p-3.5 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5 ${
           isDragging
-            ? 'border-cyan-400 bg-cyan-950/30'
+            ? 'border-cyan-400 bg-cyan-950/40 scale-[1.01]'
             : 'border-neutral-700 hover:border-neutral-500 bg-neutral-900/60 hover:bg-neutral-900'
         }`}
       >
@@ -98,10 +150,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ currentUrl, onSele
         </div>
         <div>
           <span className="text-xs font-medium text-neutral-200 block">
-            Clique para escolher ou arraste a imagem
+            {currentUrl ? 'Clique para trocar ou solte uma nova imagem' : 'Clique para escolher ou arraste a imagem'}
           </span>
           <span className="text-[10px] text-neutral-500">
-            Carrega instantaneamente do seu computador
+            Carrega diretamente do seu computador sem limite
           </span>
         </div>
       </div>
@@ -113,7 +165,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ currentUrl, onSele
             <Link2 className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500" />
             <input
               type="url"
-              placeholder="Cole o link da imagem (URL direta)..."
+              placeholder="Ou cole o link de uma imagem (URL)..."
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
               className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-neutral-900 border border-neutral-700 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-cyan-400 transition-colors"
@@ -129,47 +181,6 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ currentUrl, onSele
         </div>
         {urlError && <p className="text-[10px] text-rose-400">{urlError}</p>}
       </form>
-
-      {/* Amostras Rápidas com 1 clique */}
-      <div className="pt-1">
-        <div className="flex items-center gap-1 mb-1.5 text-[10px] text-neutral-400 font-medium">
-          <Sparkles className="w-3 h-3 text-amber-400" />
-          <span>Ou teste com imagens de exemplo:</span>
-        </div>
-        <div className="grid grid-cols-4 gap-1.5">
-          {SAMPLE_IMAGES.map((img) => {
-            const isSelected = currentUrl === img.url;
-            return (
-              <button
-                key={img.id}
-                type="button"
-                onClick={() => onSelectUrl(img.url, img.title)}
-                title={img.title}
-                className={`relative aspect-square rounded-lg overflow-hidden border transition-all group ${
-                  isSelected
-                    ? 'border-cyan-400 ring-2 ring-cyan-400/40'
-                    : 'border-neutral-800 hover:border-neutral-600'
-                }`}
-              >
-                <img
-                  src={img.thumbnail}
-                  alt={img.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                  crossOrigin="anonymous"
-                />
-                <span className="absolute inset-x-0 bottom-0 py-0.5 px-1 bg-black/80 text-[8px] text-neutral-300 truncate text-center block">
-                  {img.title}
-                </span>
-                {isSelected && (
-                  <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-cyan-500 text-black flex items-center justify-center">
-                    <Check className="w-2.5 h-2.5 stroke-[3]" />
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 };

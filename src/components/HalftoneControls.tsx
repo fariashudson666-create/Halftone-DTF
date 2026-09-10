@@ -321,6 +321,66 @@ export const HalftoneControls: React.FC<HalftoneControlsProps> = ({
           </div>
         </div>
 
+        {/* Proximidade / Espaçamento dos Pontos */}
+        <div className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-neutral-200 font-medium flex items-center gap-1.5">
+              <span>Proximidade dos Pontos</span>
+            </span>
+            <span className="font-mono text-[11px] text-cyan-400 font-semibold">
+              {(settings.dotSpacing ?? 0.9) <= 0.65
+                ? 'Muito Próximos'
+                : (settings.dotSpacing ?? 0.9) <= 0.85
+                ? 'Próximos'
+                : (settings.dotSpacing ?? 0.9) <= 1.05
+                ? 'Equilibrado'
+                : 'Espaçados'}
+              {' '}({Math.round((1 / (settings.dotSpacing ?? 0.9)) * 100)}%)
+            </span>
+          </div>
+
+          <input
+            type="range"
+            min="0.4"
+            max="1.5"
+            step="0.05"
+            value={settings.dotSpacing ?? 0.9}
+            onChange={(e) => onChange({ dotSpacing: Number(e.target.value) })}
+            className="w-full accent-cyan-400 bg-neutral-800 h-1.5 rounded-lg appearance-none cursor-pointer"
+          />
+
+          <div className="flex justify-between text-[9px] text-neutral-500 font-mono">
+            <span className="text-cyan-400 font-medium">← Mais Próximos (Juntos)</span>
+            <span>Espaçados (Separados) →</span>
+          </div>
+
+          {/* Atalhos Rápidos de Proximidade */}
+          <div className="grid grid-cols-4 gap-1 pt-1">
+            {[
+              { val: 0.5, label: 'Juntos', desc: 'Super colados' },
+              { val: 0.7, label: 'Próximos', desc: 'Trama densa' },
+              { val: 0.95, label: 'Normal', desc: 'Padrão' },
+              { val: 1.3, label: 'Espaçado', desc: 'Afastados' }
+            ].map((p) => {
+              const active = Math.abs((settings.dotSpacing ?? 0.9) - p.val) < 0.1;
+              return (
+                <button
+                  key={p.val}
+                  type="button"
+                  onClick={() => onChange({ dotSpacing: p.val })}
+                  className={`py-1 px-1 rounded-md text-center border text-[10px] font-medium transition-all ${
+                    active
+                      ? 'bg-cyan-500 text-neutral-950 font-bold border-cyan-400'
+                      : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:text-neutral-200 hover:border-neutral-700'
+                  }`}
+                >
+                  <span className="block leading-tight">{p.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Contraste / Intensidade */}
         <div className="space-y-1">
           <div className="flex justify-between text-xs">

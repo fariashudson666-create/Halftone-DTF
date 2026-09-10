@@ -122,6 +122,8 @@ export function renderHalftoneCanvas(
     const data = imgData.data;
 
     const cellSize = Math.max(3, settings.dotSize);
+    const spacingFactor = Math.max(0.35, Math.min(2.0, settings.dotSpacing ?? 0.9));
+    const step = Math.max(2, Math.round(cellSize * spacingFactor));
     const angleRad = (settings.angle * Math.PI) / 180;
     const contrastPow = 1 / Math.max(0.2, settings.contrast);
 
@@ -145,10 +147,10 @@ export function renderHalftoneCanvas(
         ctx.fillStyle = ch.color;
         const chAngleRad = ((settings.angle + ch.angle) * Math.PI) / 180;
 
-        for (let y = 0; y < height; y += cellSize) {
-          for (let x = 0; x < width; x += cellSize) {
-            const sx = Math.min(width - 1, x + Math.floor(cellSize / 2));
-            const sy = Math.min(height - 1, y + Math.floor(cellSize / 2));
+        for (let y = 0; y < height; y += step) {
+          for (let x = 0; x < width; x += step) {
+            const sx = Math.min(width - 1, Math.max(0, Math.floor(x + step / 2)));
+            const sy = Math.min(height - 1, Math.max(0, Math.floor(y + step / 2)));
             const idx = (sy * width + sx) * 4;
 
             const alpha = data[idx + 3] / 255;
@@ -182,8 +184,8 @@ export function renderHalftoneCanvas(
             if (dotRadius > 0.3) {
               drawShape(
                 ctx,
-                x + cellSize / 2,
-                y + cellSize / 2,
+                x + step / 2,
+                y + step / 2,
                 dotRadius,
                 settings.shape,
                 chAngleRad
@@ -196,10 +198,10 @@ export function renderHalftoneCanvas(
 
     } else if (settings.colorMode === 'original') {
       // Modo de Cores Originais: cada ponto adquire a cor original da imagem naquele ponto!
-      for (let y = 0; y < height; y += cellSize) {
-        for (let x = 0; x < width; x += cellSize) {
-          const sx = Math.min(width - 1, x + Math.floor(cellSize / 2));
-          const sy = Math.min(height - 1, y + Math.floor(cellSize / 2));
+      for (let y = 0; y < height; y += step) {
+        for (let x = 0; x < width; x += step) {
+          const sx = Math.min(width - 1, Math.max(0, Math.floor(x + step / 2)));
+          const sy = Math.min(height - 1, Math.max(0, Math.floor(y + step / 2)));
           const idx = (sy * width + sx) * 4;
 
           const alpha = data[idx + 3] / 255;
@@ -229,8 +231,8 @@ export function renderHalftoneCanvas(
             ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
             drawShape(
               ctx,
-              x + cellSize / 2,
-              y + cellSize / 2,
+              x + step / 2,
+              y + step / 2,
               dotRadius,
               settings.shape,
               angleRad
@@ -243,10 +245,10 @@ export function renderHalftoneCanvas(
       // Monochrome ou Custom Duotone Halftone
       ctx.fillStyle = settings.dotColor;
 
-      for (let y = 0; y < height; y += cellSize) {
-        for (let x = 0; x < width; x += cellSize) {
-          const sx = Math.min(width - 1, x + Math.floor(cellSize / 2));
-          const sy = Math.min(height - 1, y + Math.floor(cellSize / 2));
+      for (let y = 0; y < height; y += step) {
+        for (let x = 0; x < width; x += step) {
+          const sx = Math.min(width - 1, Math.max(0, Math.floor(x + step / 2)));
+          const sy = Math.min(height - 1, Math.max(0, Math.floor(y + step / 2)));
           const idx = (sy * width + sx) * 4;
 
           const alpha = data[idx + 3] / 255;
@@ -278,8 +280,8 @@ export function renderHalftoneCanvas(
           if (dotRadius > 0.3) {
             drawShape(
               ctx,
-              x + cellSize / 2,
-              y + cellSize / 2,
+              x + step / 2,
+              y + step / 2,
               dotRadius,
               settings.shape,
               angleRad

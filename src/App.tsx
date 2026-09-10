@@ -5,14 +5,14 @@
 
 import React, { useState } from 'react';
 import { HalftoneSettings } from './types';
-import { SAMPLE_IMAGES } from './data/sampleArtworks';
 import { ImageUploader } from './components/ImageUploader';
 import { HalftoneControls } from './components/HalftoneControls';
 import { HalftoneCanvas } from './components/HalftoneCanvas';
-import { Sparkles, SlidersHorizontal, Image as ImageIcon } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 const DEFAULT_SETTINGS: HalftoneSettings = {
   dotSize: 9,
+  dotSpacing: 0.7, // Pontos mais próximos um do outro por padrão
   shape: 'round',
   colorMode: 'original',
   angle: 45,
@@ -28,14 +28,33 @@ const DEFAULT_SETTINGS: HalftoneSettings = {
 };
 
 export default function App() {
-  const [currentUrl, setCurrentUrl] = useState<string>(SAMPLE_IMAGES[0].url);
-  const [imageTitle, setImageTitle] = useState<string>(SAMPLE_IMAGES[0].title);
+  const [currentUrl, setCurrentUrl] = useState<string>('');
+  const [imageTitle, setImageTitle] = useState<string>('');
   const [settings, setSettings] = useState<HalftoneSettings>(DEFAULT_SETTINGS);
   const [mobileTab, setMobileTab] = useState<'preview' | 'controls'>('preview');
 
   const handleSelectUrl = (url: string, title?: string) => {
     setCurrentUrl(url);
     if (title) setImageTitle(title);
+    setMobileTab('preview');
+  };
+
+  const handleClearImage = () => {
+    setCurrentUrl('');
+    setImageTitle('');
+  };
+
+  const handleUploadFile = (file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        setCurrentUrl(e.target.result as string);
+        setImageTitle(file.name);
+        setMobileTab('preview');
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleUpdateSettings = (newSettings: Partial<HalftoneSettings>) => {
@@ -98,16 +117,18 @@ export default function App() {
             mobileTab === 'controls' ? 'block' : 'hidden sm:flex'
           }`}
         >
-          <div className="p-4 space-y-6">
+          <div className="p-4 space-y-5">
             {/* Bloco 1: Onde o usuário coloca a imagem */}
             <div className="p-3.5 rounded-xl bg-neutral-950 border border-neutral-800 shadow-sm">
               <ImageUploader
                 currentUrl={currentUrl}
+                imageTitle={imageTitle}
                 onSelectUrl={handleSelectUrl}
+                onClearImage={currentUrl ? handleClearImage : undefined}
               />
             </div>
 
-            {/* Bloco 2: Apenas os controles do efeito halftone */}
+            {/* Bloco 2: Controles do efeito halftone */}
             <div className="p-3.5 rounded-xl bg-neutral-950 border border-neutral-800 shadow-sm">
               <HalftoneControls
                 settings={settings}
@@ -129,6 +150,7 @@ export default function App() {
             imageTitle={imageTitle}
             settings={settings}
             onUpdateSettings={handleUpdateSettings}
+            onUploadImage={handleUploadFile}
           />
         </main>
       </div>
