@@ -1,6 +1,6 @@
 {
-  "name": "Halftone Studio DTF / RIP Pro",
-  "description": "Professional Direct-to-Film (DTF) prepress raster image processor with halftone screening, white underbase choke, direct image links, and multi-channel separations.",
+  "name": "Halftone Studio",
+  "description": "Transforme qualquer imagem em arte halftone com controle de pontos, cores CMYK, monocromático e download em alta resolução.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

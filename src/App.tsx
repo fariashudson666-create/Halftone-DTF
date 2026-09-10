@@ -4,209 +4,129 @@
  */
 
 import React, { useState } from 'react';
-import { 
-  ViewTab, 
-  ViewMode, 
-  GarmentColor, 
-  ArtworkSpec, 
-  RipSettings, 
-  ChannelLayer, 
-  ProductionPreset 
-} from './types';
-import { SAMPLE_ARTWORKS } from './data/sampleArtworks';
-import { INITIAL_RIP_SETTINGS, INITIAL_CHANNELS, PRODUCTION_PRESETS } from './data/presets';
-import { TopNavBar } from './components/TopNavBar';
-import { LeftChannelsRail } from './components/LeftChannelsRail';
-import { CenterCanvasStage } from './components/CenterCanvasStage';
-import { RightInspectorPanel } from './components/RightInspectorPanel';
-import { DirectImageLinkModal } from './components/DirectImageLinkModal';
-import { ChokeMatrixModal } from './components/ChokeMatrixModal';
-import { ExportModal } from './components/ExportModal';
-import { SettingsModal } from './components/SettingsModal';
-import { ChannelsView } from './components/ChannelsView';
-import { PresetsView } from './components/PresetsView';
-import { QueueView } from './components/QueueView';
+import { HalftoneSettings } from './types';
+import { SAMPLE_IMAGES } from './data/sampleArtworks';
+import { ImageUploader } from './components/ImageUploader';
+import { HalftoneControls } from './components/HalftoneControls';
+import { HalftoneCanvas } from './components/HalftoneCanvas';
+import { Sparkles, SlidersHorizontal, Image as ImageIcon } from 'lucide-react';
+
+const DEFAULT_SETTINGS: HalftoneSettings = {
+  dotSize: 9,
+  shape: 'round',
+  colorMode: 'monochrome',
+  angle: 45,
+  contrast: 1.2,
+  invert: false,
+  transparentBg: false,
+  dotColor: '#000000',
+  bgColor: '#ffffff'
+};
 
 export default function App() {
-  // Navigation & View Modes
-  const [currentTab, setCurrentTab] = useState<ViewTab>('workspace');
-  const [viewMode, setViewMode] = useState<ViewMode>('composite');
-  const [garmentColor, setGarmentColor] = useState<GarmentColor>('black');
+  const [currentUrl, setCurrentUrl] = useState<string>(SAMPLE_IMAGES[0].url);
+  const [imageTitle, setImageTitle] = useState<string>(SAMPLE_IMAGES[0].title);
+  const [settings, setSettings] = useState<HalftoneSettings>(DEFAULT_SETTINGS);
+  const [mobileTab, setMobileTab] = useState<'preview' | 'controls'>('preview');
 
-  // Active Artwork & Direct Image Link
-  const [currentArtwork, setCurrentArtwork] = useState<ArtworkSpec>(SAMPLE_ARTWORKS[0]);
-
-  // RIP Engine Settings
-  const [ripSettings, setRipSettings] = useState<RipSettings>(INITIAL_RIP_SETTINGS);
-  const [channels, setChannels] = useState<ChannelLayer[]>(INITIAL_CHANNELS);
-
-  // Tools State
-  const [showRulers, setShowRulers] = useState<boolean>(true);
-  const [pipetteDensity, setPipetteDensity] = useState<number>(84.2);
-  const [isPipetteActive, setIsPipetteActive] = useState<boolean>(false);
-
-  // Modals
-  const [isImageModalOpen, setIsImageModalOpen] = useState<boolean>(false);
-  const [isChokeMatrixOpen, setIsChokeMatrixOpen] = useState<boolean>(false);
-  const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
-
-  // Channel toggles
-  const handleToggleChannel = (id: string) => {
-    setChannels(prev =>
-      prev.map(ch => (ch.id === id ? { ...ch, visible: !ch.visible } : ch))
-    );
+  const handleSelectUrl = (url: string, title?: string) => {
+    setCurrentUrl(url);
+    if (title) setImageTitle(title);
   };
 
-  const handleAddSpotChannel = () => {
-    const newCh: ChannelLayer = {
-      id: `spot-${Date.now()}`,
-      name: 'Custom Foil / Spot Mask',
-      shortName: 'SPOT',
-      colorHex: '#38bdf8',
-      angle: 30.0,
-      dotShape: '30° Round',
-      visible: true,
-      solid: 'Spot Varnish',
-      density: 50
-    };
-    setChannels([...channels, newCh]);
+  const handleUpdateSettings = (newSettings: Partial<HalftoneSettings>) => {
+    setSettings((prev) => ({ ...prev, ...newSettings }));
   };
 
-  // Change RIP settings
-  const handleChangeSettings = (newSettings: Partial<RipSettings>) => {
-    setRipSettings(prev => ({ ...prev, ...newSettings }));
-  };
-
-  // Apply production preset
-  const handleApplyPreset = (preset: ProductionPreset) => {
-    setRipSettings(prev => ({
-      ...prev,
-      currentPresetId: preset.id,
-      lpi: preset.lpi,
-      dotShape: preset.dotShape,
-      underbaseChoke: preset.underbaseChoke,
-      underbaseMode: preset.underbaseMode,
-      minimumDotCutoff: preset.minimumCutoff,
-      doublePass: preset.doublePass
-    }));
+  const handleResetSettings = () => {
+    setSettings(DEFAULT_SETTINGS);
   };
 
   return (
-    <div className="h-screen w-screen bg-[#121316] text-[#e3e2e6] flex flex-col overflow-hidden select-none font-body-text">
-      {/* Top Application Bar */}
-      <TopNavBar
-        currentTab={currentTab}
-        onSelectTab={setCurrentTab}
-        viewMode={viewMode}
-        onSelectViewMode={setViewMode}
-        garmentColor={garmentColor}
-        onSelectGarmentColor={setGarmentColor}
-        currentArtwork={currentArtwork}
-        onOpenImageModal={() => setIsImageModalOpen(true)}
-        onOpenExportModal={() => setIsExportModalOpen(true)}
-        onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
-      />
+    <div className="h-screen w-screen bg-neutral-950 text-neutral-100 flex flex-col overflow-hidden font-sans">
+      {/* Barra de Título Superior Limpa */}
+      <header className="h-13 px-4 sm:px-6 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-cyan-400/10 border border-cyan-400/30 flex items-center justify-center text-cyan-400">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-2">
+              <span>Halftone Studio</span>
+              <span className="text-[10px] font-normal px-1.5 py-0.2 rounded bg-neutral-800 text-neutral-400 border border-neutral-700">
+                Efeito de Retícula
+              </span>
+            </h1>
+            <p className="text-[10px] text-neutral-400 hidden sm:block">
+              Coloque sua imagem, ajuste o efeito halftone e baixe pronta em PNG
+            </p>
+          </div>
+        </div>
 
-      {/* Main Workspace Area */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {currentTab === 'workspace' && (
-          <>
-            {/* Left Channel Isolation Rail */}
-            <LeftChannelsRail
-              channels={channels}
-              onToggleChannel={handleToggleChannel}
-              pipetteDensity={pipetteDensity}
-              isPipetteActive={isPipetteActive}
-              onTogglePipette={() => setIsPipetteActive(!isPipetteActive)}
-              highlightChoke={ripSettings.underbaseChoke}
-              onOpenChokeMatrix={() => setIsChokeMatrixOpen(true)}
-              showRulers={showRulers}
-              onToggleRulers={() => setShowRulers(!showRulers)}
-              onAddSpotChannel={handleAddSpotChannel}
-            />
+        {/* Alternador Mobile (Apenas em telas pequenas) */}
+        <div className="flex sm:hidden bg-neutral-800 p-0.5 rounded-lg border border-neutral-700">
+          <button
+            type="button"
+            onClick={() => setMobileTab('preview')}
+            className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all ${
+              mobileTab === 'preview' ? 'bg-cyan-500 text-black' : 'text-neutral-400'
+            }`}
+          >
+            Visualizar
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('controls')}
+            className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all ${
+              mobileTab === 'controls' ? 'bg-cyan-500 text-black' : 'text-neutral-400'
+            }`}
+          >
+            Ajustes
+          </button>
+        </div>
+      </header>
 
-            {/* Center Canvas Stage */}
-            <CenterCanvasStage
-              currentArtwork={currentArtwork}
-              ripSettings={ripSettings}
-              viewMode={viewMode}
-              garmentColor={garmentColor}
-              channels={channels}
-              showRulers={showRulers}
-              isPipetteActive={isPipetteActive}
-              onPipetteSample={(val) => setPipetteDensity(val)}
-              onOpenImageModal={() => setIsImageModalOpen(true)}
-            />
+      {/* Conteúdo Principal */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Painel Lateral: Imagem e Ajustes do Halftone */}
+        <aside
+          className={`w-full sm:w-80 md:w-96 bg-neutral-900 border-r border-neutral-800 flex flex-col overflow-y-auto shrink-0 z-20 ${
+            mobileTab === 'controls' ? 'block' : 'hidden sm:flex'
+          }`}
+        >
+          <div className="p-4 space-y-6">
+            {/* Bloco 1: Onde o usuário coloca a imagem */}
+            <div className="p-3.5 rounded-xl bg-neutral-950 border border-neutral-800 shadow-sm">
+              <ImageUploader
+                currentUrl={currentUrl}
+                onSelectUrl={handleSelectUrl}
+              />
+            </div>
 
-            {/* Right Inspector & Parameter Studio */}
-            <RightInspectorPanel
-              ripSettings={ripSettings}
-              onChangeSettings={handleChangeSettings}
-              onApplyPreset={handleApplyPreset}
-              onRenderPreview={() => {
-                // Trigger re-render notification or micro-flash
-                setRipSettings(r => ({ ...r, dotGainComp: r.dotGainComp }));
-              }}
-              onOpenExportModal={() => setIsExportModalOpen(true)}
-            />
-          </>
-        )}
+            {/* Bloco 2: Apenas os controles do efeito halftone */}
+            <div className="p-3.5 rounded-xl bg-neutral-950 border border-neutral-800 shadow-sm">
+              <HalftoneControls
+                settings={settings}
+                onChange={handleUpdateSettings}
+                onReset={handleResetSettings}
+              />
+            </div>
+          </div>
+        </aside>
 
-        {currentTab === 'channels' && (
-          <ChannelsView
-            channels={channels}
-            onToggleChannel={handleToggleChannel}
-            currentArtwork={currentArtwork}
-            ripSettings={ripSettings}
+        {/* Visualizador Central e Download */}
+        <main
+          className={`flex-1 flex flex-col overflow-hidden ${
+            mobileTab === 'preview' ? 'flex' : 'hidden sm:flex'
+          }`}
+        >
+          <HalftoneCanvas
+            imageUrl={currentUrl}
+            imageTitle={imageTitle}
+            settings={settings}
           />
-        )}
-
-        {currentTab === 'presets' && (
-          <PresetsView
-            ripSettings={ripSettings}
-            onApplyPreset={handleApplyPreset}
-            onNavigateToWorkspace={() => setCurrentTab('workspace')}
-          />
-        )}
-
-        {currentTab === 'queue' && (
-          <QueueView
-            currentArtwork={currentArtwork}
-            onNavigateToWorkspace={() => setCurrentTab('workspace')}
-          />
-        )}
+        </main>
       </div>
-
-      {/* Direct Image Links & HTML Modal */}
-      <DirectImageLinkModal
-        isOpen={isImageModalOpen}
-        onClose={() => setIsImageModalOpen(false)}
-        currentArtwork={currentArtwork}
-        onSelectArtwork={(art) => setCurrentArtwork(art)}
-      />
-
-      {/* Choke Matrix Micro-Adjustment Modal */}
-      <ChokeMatrixModal
-        isOpen={isChokeMatrixOpen}
-        onClose={() => setIsChokeMatrixOpen(false)}
-        underbaseChoke={ripSettings.underbaseChoke}
-        onChangeChoke={(val) => handleChangeSettings({ underbaseChoke: val })}
-      />
-
-      {/* Production Package & TIFF Export Modal */}
-      <ExportModal
-        isOpen={isExportModalOpen}
-        onClose={() => setIsExportModalOpen(false)}
-        currentArtwork={currentArtwork}
-        ripSettings={ripSettings}
-      />
-
-      {/* Studio Calibration Settings Modal */}
-      <SettingsModal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-      />
     </div>
   );
 }
